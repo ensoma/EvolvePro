@@ -37,4 +37,6 @@ embeddings_env.yml
 venv/
 *.venv
 env/
-*.env
+*.env# pixi environments
+.pixi/*
+!.pixi/config.toml
