@@ -44,8 +44,22 @@ jax-unirep = "*"
 transformers = "*"
 tensorflow = ">=2.0"
 
+[tool.pixi.feature.dev.dependencies]
+ruff = "*"
+pyright = "*"
+pytest = "*"
+
 [tool.pixi.environments]
 plm-cpu = { features = ["plm-cpu"], no-default-feature = true }
+evolvepro-cpu-dev = ["dev"]
 
 [dependency-groups]
 plm-cpu = ["ankh"]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
