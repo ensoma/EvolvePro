@@ -52,6 +52,7 @@ pytest = "*"
 [tool.pixi.environments]
 plm-cpu = { features = ["plm-cpu"], no-default-feature = true }
 evolvepro-cpu-dev = ["dev"]
+plm-cpu-dev = { features = ["plm-cpu", "dev"], no-default-feature = true }
 
 [dependency-groups]
 plm-cpu = ["ankh"]

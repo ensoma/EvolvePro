@@ -6,6 +6,9 @@ This script provides a command-line interface for extracting ESM (Evolutionary S
 embeddings from protein FASTA files. ESM models are state-of-the-art protein language models
 developed by Meta AI.
 
+By default, ESM models are downloaded to a 'models' directory adjacent to the output directory.
+You can customize the model cache location using the --model_cache_dir option.
+
 Usage:
     pixi run -e plm-cpu python evolvepro/wrapper/extract_embeddings.py \
         --fasta_file output/exp/my_protein_single_mutants.fasta \
@@ -113,6 +116,14 @@ Examples:
       --model esm2_t48_15B_UR50D \\
       --toks_per_batch 256
 
+  # Custom model cache directory:
+  pixi run -e plm-cpu python evolvepro/wrapper/extract_embeddings.py \\
+      --fasta_file data/sequences.fasta \\
+      --output_dir output/embeddings \\
+      --protein_name my_protein \\
+      --model esm2_t33_650M_UR50D \\
+      --model_cache_dir /path/to/model/cache
+
   # List available models:
   pixi run -e plm-cpu python evolvepro/wrapper/extract_embeddings.py --list_models
         """,
@@ -151,6 +162,12 @@ Examples:
 
     # Optional arguments
     optional = parser.add_argument_group("optional arguments")
+    optional.add_argument(
+        "--model_cache_dir",
+        type=str,
+        default=None,
+        help="Directory to cache downloaded ESM models. If not specified, defaults to '{output_dir}/models'.",
+    )
     optional.add_argument(
         "--toks_per_batch",
         type=int,
@@ -243,6 +260,7 @@ def run_esm_extraction(
     truncation_seq_length: int,
     use_gpu: bool,
     concatenate: bool,
+    model_cache_dir: str,
 ) -> int:
     """
     Run the ESM extraction script.
@@ -258,6 +276,7 @@ def run_esm_extraction(
         truncation_seq_length: Sequence truncation length
         use_gpu: Whether to use GPU
         concatenate: Whether to concatenate outputs
+        model_cache_dir: Directory to cache downloaded models
 
     Returns:
         Return code from the extraction script
@@ -293,12 +312,17 @@ def run_esm_extraction(
         concatenate_dir = str(Path(output_dir).parent)
         cmd.extend(["--concatenate_dir", concatenate_dir])
 
+    # Set up environment to control model cache location
+    env = os.environ.copy()
+    env["TORCH_HOME"] = model_cache_dir
+
     logger.info(f"Running ESM extraction...")
+    logger.info(f"Model cache directory: {model_cache_dir}")
     logger.info(f"Command: {' '.join(cmd)}")
     logger.info("")
 
-    # Run the extraction script
-    result = subprocess.run(cmd)
+    # Run the extraction script with custom environment
+    result = subprocess.run(cmd, env=env)
 
     return result.returncode
 
@@ -307,15 +331,15 @@ def main() -> None:
     """Main execution function."""
     args = parse_arguments()
 
-    # Setup logging
-    setup_logging(args.verbose)
-
-    # Handle --list_models
+    # Handle --list_models (must be before setup_logging)
     if args.list_models:
         # For list_models, always show output
         setup_logging(True)
         list_models()
         return
+
+    # Setup logging for normal operation
+    setup_logging(args.verbose)
 
     logger.info("=" * 80)
     logger.info("EVOLVEpro Step 2: ESM Embedding Extraction")
@@ -339,15 +363,23 @@ def main() -> None:
     # Use default batch size if not specified
     toks_per_batch = args.toks_per_batch or model_info["default_batch"]
 
+    # Set model cache directory (default to output_dir/models if not specified)
+    if args.model_cache_dir:
+        model_cache_dir = args.model_cache_dir
+    else:
+        model_cache_dir = str(Path(args.output_dir).parent / "models")
+
     logger.info(f"Model description: {model_info['description']}")
     logger.info(f"Tokens per batch: {toks_per_batch}")
     logger.info(f"Representation layers: {args.repr_layers}")
     logger.info(f"Include: {args.include}")
     logger.info(f"Concatenate outputs: {not args.no_concatenate}")
+    logger.info(f"Model cache directory: {model_cache_dir}")
     logger.info("")
 
-    # Create output directory
+    # Create output and model cache directories
     os.makedirs(args.output_dir, exist_ok=True)
+    os.makedirs(model_cache_dir, exist_ok=True)
 
     # Run extraction
     logger.info("Starting embedding extraction...")
@@ -365,6 +397,7 @@ def main() -> None:
         truncation_seq_length=args.truncation_seq_length,
         use_gpu=args.gpu,
         concatenate=not args.no_concatenate,
+        model_cache_dir=model_cache_dir,
     )
 
     if returncode != 0:

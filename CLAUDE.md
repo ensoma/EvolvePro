@@ -129,7 +129,7 @@ python scripts/exp/my_protein.py
 
 ### Extracting ESM Embeddings (Wrapper Script)
 
-The easiest way to extract ESM embeddings is using the wrapper script:
+The easiest way to extract ESM embeddings is using the wrapper script. By default, ESM models are downloaded to a `models` directory adjacent to your output directory (e.g., if output is `output/exp/embeddings`, models are cached in `output/models`). You can customize this location using the `--model_cache_dir` option.
 
 **Basic usage:**
 ```bash
@@ -159,6 +159,17 @@ pixi run -e plm-cpu python evolvepro/wrapper/extract_embeddings.py \
   --protein_name my_protein \
   --model esm2_t48_15B_UR50D \
   --gpu \
+  --verbose
+```
+
+**Custom model cache directory:**
+```bash
+pixi run -e plm-cpu python evolvepro/wrapper/extract_embeddings.py \
+  --fasta_file data/sequences.fasta \
+  --output_dir output/embeddings \
+  --protein_name my_protein \
+  --model esm2_t33_650M_UR50D \
+  --model_cache_dir /path/to/model/cache \
   --verbose
 ```
 
@@ -322,6 +333,7 @@ pixi run python scripts/exp/my_protein.py
 **Key Features**:
 - Extract embeddings using ESM models (ESM-2 and ESM-1b)
 - Automatic model downloading and caching
+- Configurable model cache location (defaults to `{output_dir_parent}/models`)
 - Configurable batch sizes optimized for different models
 - GPU and CPU support
 - Automatic concatenation of embeddings into CSV format
@@ -333,6 +345,7 @@ pixi run python scripts/exp/my_protein.py
 - `--output_dir`: Output directory for embeddings (required)
 - `--protein_name`: Protein name for output files (required)
 - `--model`: ESM model to use (required, see available models below)
+- `--model_cache_dir`: Directory to cache downloaded models (default: `{output_dir_parent}/models`)
 - `--toks_per_batch`: Batch size (auto-optimized per model if not specified)
 - `--repr_layers`: Layer indices to extract (default: -1 for last layer)
 - `--include`: Representations to extract (default: mean)
@@ -351,6 +364,7 @@ pixi run python scripts/exp/my_protein.py
 **Output Files**:
 - `{output_dir}/*.pt`: Individual embedding files (one per sequence)
 - `{fasta_filename}_{model_name}.csv`: Concatenated embeddings CSV (default)
+- `{model_cache_dir}/`: Downloaded ESM model files (default: `{output_dir_parent}/models/`)
 
 **Example Usage**:
 ```bash
@@ -380,6 +394,15 @@ pixi run -e plm-cpu python evolvepro/wrapper/extract_embeddings.py \
   --protein_name my_protein \
   --model esm2_t48_15B_UR50D \
   --gpu \
+  --verbose
+
+# Custom model cache directory
+pixi run -e plm-cpu python evolvepro/wrapper/extract_embeddings.py \
+  --fasta_file data/sequences.fasta \
+  --output_dir output/embeddings \
+  --protein_name my_protein \
+  --model esm2_t33_650M_UR50D \
+  --model_cache_dir /shared/models \
   --verbose
 ```
 
@@ -498,45 +521,75 @@ EVOLVEpro uses pytest for testing. Tests are located in the `tests/` directory.
 
 ### Setting Up the Test Environment
 
-The project includes a dedicated development environment with testing dependencies:
+The project includes dedicated development environments with testing dependencies:
 
-**Install the development environment:**
+**Install the development environments:**
 ```bash
+# For testing Step 1 (process_experimental.py)
 pixi install -e evolvepro-cpu-dev
+
+# For testing Step 2 (extract_embeddings.py)
+pixi install -e plm-cpu-dev
 ```
 
-This environment includes:
-- pytest: Testing framework
-- ruff: Linting and formatting
-- pyright: Type checking
-- All EVOLVEpro dependencies
+**Environment details:**
+- `evolvepro-cpu-dev`: For testing core EVOLVEpro functionality (Step 1)
+  - pytest: Testing framework
+  - ruff: Linting and formatting
+  - pyright: Type checking
+  - All EVOLVEpro dependencies
+
+- `plm-cpu-dev`: For testing PLM embedding extraction (Step 2)
+  - pytest: Testing framework
+  - ruff: Linting and formatting
+  - pyright: Type checking
+  - All PLM dependencies (fair-esm, transformers, etc.)
 
 ### Running Tests
 
 **Run all tests:**
 ```bash
-pixi run -e evolvepro-cpu-dev pytest
+# Run Step 1 wrapper tests
+pixi run -e evolvepro-cpu-dev pytest tests/test_process_experimental_wrapper.py
+
+# Run Step 2 wrapper tests
+pixi run -e plm-cpu-dev pytest tests/test_extract_embeddings_wrapper.py
+
+# Run all tests (requires both environments)
+pixi run -e evolvepro-cpu-dev pytest tests/test_process_experimental_wrapper.py && \
+pixi run -e plm-cpu-dev pytest tests/test_extract_embeddings_wrapper.py
 ```
 
 **Run specific test file:**
 ```bash
+# Step 1 wrapper tests
 pixi run -e evolvepro-cpu-dev pytest tests/test_process_experimental_wrapper.py
+
+# Step 2 wrapper tests
+pixi run -e plm-cpu-dev pytest tests/test_extract_embeddings_wrapper.py
 ```
 
 **Run with verbose output:**
 ```bash
-pixi run -e evolvepro-cpu-dev pytest -v
+pixi run -e evolvepro-cpu-dev pytest tests/test_process_experimental_wrapper.py -v
+pixi run -e plm-cpu-dev pytest tests/test_extract_embeddings_wrapper.py -v
 ```
 
 **Run specific test class or function:**
 ```bash
+# Step 1 wrapper
 pixi run -e evolvepro-cpu-dev pytest tests/test_process_experimental_wrapper.py::TestBasicFunctionality
 pixi run -e evolvepro-cpu-dev pytest tests/test_process_experimental_wrapper.py::TestBasicFunctionality::test_generate_from_sequence
+
+# Step 2 wrapper
+pixi run -e plm-cpu-dev pytest tests/test_extract_embeddings_wrapper.py::TestBasicFunctionality
+pixi run -e plm-cpu-dev pytest tests/test_extract_embeddings_wrapper.py::TestListModels::test_list_models
 ```
 
 **Run with coverage (if pytest-cov is installed):**
 ```bash
-pixi run -e evolvepro-cpu-dev pytest --cov=evolvepro --cov-report=html
+pixi run -e evolvepro-cpu-dev pytest tests/test_process_experimental_wrapper.py --cov=evolvepro --cov-report=html
+pixi run -e plm-cpu-dev pytest tests/test_extract_embeddings_wrapper.py --cov=evolvepro --cov-report=html
 ```
 
 ### Available Tests
@@ -580,6 +633,61 @@ Comprehensive regression tests for the `evolvepro/wrapper/process_experimental.p
 ```bash
 pixi run -e evolvepro-cpu-dev pytest tests/test_process_experimental_wrapper.py -v
 ```
+
+#### test_extract_embeddings_wrapper.py
+
+Comprehensive regression tests for the `evolvepro/wrapper/extract_embeddings.py` wrapper script.
+
+**Test Coverage:**
+- **TestListModels**: --list_models functionality
+  - Displaying all available ESM models with descriptions
+
+- **TestBasicFunctionality**: Core embedding extraction tests
+  - Basic extraction from FASTA file
+  - Verbose and quiet output modes
+  - Output file generation (.pt files and CSV)
+
+- **TestModelOptions**: Model configuration tests
+  - Custom batch sizes
+  - Custom model cache directory
+
+- **TestHardwareOptions**: GPU/CPU configuration tests
+  - CPU-only mode (default)
+  - GPU flag handling
+
+- **TestOutputOptions**: Output file configuration tests
+  - No concatenate option (skip CSV generation)
+  - Output directory creation
+
+- **TestErrorHandling**: Error cases and validation
+  - Missing required arguments
+  - Non-existent FASTA files
+  - Invalid model names
+
+- **TestSequenceValidation**: Sequence edge cases
+  - Single sequence files
+  - Short protein sequences
+
+- **TestIntegration**: End-to-end workflow tests
+  - Complete workflows from FASTA to embeddings CSV
+
+**Running wrapper tests:**
+```bash
+# Run all tests (uses smallest ESM model: esm2_t30_150M_UR50D)
+pixi run -e plm-cpu-dev pytest tests/test_extract_embeddings_wrapper.py -v
+
+# Run specific test class
+pixi run -e plm-cpu-dev pytest tests/test_extract_embeddings_wrapper.py::TestBasicFunctionality -v
+
+# Run specific test function
+pixi run -e plm-cpu-dev pytest tests/test_extract_embeddings_wrapper.py::TestListModels::test_list_models -v
+```
+
+**Important Notes:**
+- These tests use the `plm-cpu-dev` environment (not `evolvepro-cpu-dev`) because they require PLM dependencies
+- Tests use the smallest ESM model (`esm2_t30_150M_UR50D`) to minimize download time and computational requirements
+- First test run will download the model (~600MB), subsequent runs will use the cached model
+- All 16 tests should complete in under 1 minute after the model is cached
 
 ### Writing New Tests
 
