@@ -12,6 +12,9 @@ requires = ["hatchling"]
 [tool.hatch.build.targets.wheel]
 packages = ["evolvepro"]
 
+[project.scripts]
+process-experimental = "evolvepro.wrapper.process_experimental:main"
+
 [tool.pixi.workspace]
 channels = ["conda-forge", "bioconda"]
 platforms = ["linux-64"]

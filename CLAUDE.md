@@ -206,11 +206,11 @@ python evolvepro/plm/esm/extract.py \
 
 ### Processing Experimental Data (Wrapper Script)
 
-The easiest way to process experimental data is using the wrapper script:
+The easiest way to process experimental data is using the wrapper script. With pixi, you can use the convenient `process-experimental` command:
 
 **Basic usage with a protein sequence:**
 ```bash
-pixi run python evolvepro/wrapper/process_experimental.py \
+pixi run process-experimental \
   --wt_sequence MNTINIAKNDFSQRWVTLP \
   --protein_name my_protein \
   --output_dir output/exp \
@@ -219,7 +219,7 @@ pixi run python evolvepro/wrapper/process_experimental.py \
 
 **Using an existing WT FASTA file:**
 ```bash
-pixi run python evolvepro/wrapper/process_experimental.py \
+pixi run process-experimental \
   --wt_fasta data/exp/my_protein_WT.fasta \
   --protein_name my_protein \
   --output_dir output/exp \
@@ -228,7 +228,7 @@ pixi run python evolvepro/wrapper/process_experimental.py \
 
 **Mutating specific positions only:**
 ```bash
-pixi run python evolvepro/wrapper/process_experimental.py \
+pixi run process-experimental \
   --wt_sequence MNTINIAKNDFSQRWVTLP \
   --protein_name my_protein \
   --output_dir output/exp \
@@ -238,7 +238,7 @@ pixi run python evolvepro/wrapper/process_experimental.py \
 
 **Generating multi-mutant combinations:**
 ```bash
-pixi run python evolvepro/wrapper/process_experimental.py \
+pixi run process-experimental \
   --wt_fasta output/exp/my_protein_WT.fasta \
   --protein_name my_protein \
   --output_dir output/exp \
@@ -308,7 +308,7 @@ Wrapper scripts in `evolvepro/wrapper/` provide user-friendly command-line inter
 **Example Workflow**:
 ```bash
 # Step 1: Generate variants
-pixi run python evolvepro/wrapper/process_experimental.py \
+pixi run process-experimental \
   --wt_sequence MNTINIAKNDFSQRWVTLP \
   --protein_name my_protein \
   --output_dir output/exp \
@@ -748,7 +748,7 @@ Pytest is configured in `pyproject.toml`:
 
 ### Experimental Workflow (Recommended)
 1. **Input**: Wild-type protein sequence (string or FASTA file)
-2. **Step 1 - Process** (use `evolvepro/wrapper/process_experimental.py`):
+2. **Step 1 - Process** (use `pixi run process-experimental` or `evolvepro/wrapper/process_experimental.py`):
    - Generate wild-type FASTA (if needed)
    - Generate single amino acid mutants or multi-mutant combinations
    - Output: FASTA file(s) of all variants

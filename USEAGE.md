@@ -78,7 +78,7 @@ filtered_df, fractions = process_dataset(
 - `generate_single_aa_mutants()`: Generate all single amino acid mutations
 - `generate_n_mutant_combinations()`: Create multi-mutant combinations
 
-**Example Usage**:
+**Example Usage (Python API)**:
 ```python
 from evolvepro.src.process import generate_wt, generate_single_aa_mutants
 
@@ -101,6 +101,55 @@ generate_n_mutant_combinations(
     output_file='output/exp/my_protein_double_mutants.fasta',
     threshold=1.0  # Minimum activity to include a variant
 )
+```
+
+**Command-Line Wrapper Script**:
+
+For convenience, a wrapper script `process_experimental.py` is available with a user-friendly command-line interface. With pixi, use the `process-experimental` command:
+
+```bash
+# Basic usage: Generate WT and all single mutants from a sequence
+pixi run process-experimental \
+  --wt_sequence MNTINIAKNDFSQRWVTLP \
+  --protein_name my_protein \
+  --output_dir output/exp \
+  --verbose
+
+# Use existing WT FASTA file
+pixi run process-experimental \
+  --wt_fasta data/exp/my_protein_WT.fasta \
+  --protein_name my_protein \
+  --output_dir output/exp \
+  --verbose
+
+# Mutate specific positions only
+pixi run process-experimental \
+  --wt_sequence MNTINIAKNDFSQRWVTLP \
+  --protein_name my_protein \
+  --output_dir output/exp \
+  --positions 1 5 10 15 20 \
+  --verbose
+
+# Generate multi-mutant combinations
+pixi run process-experimental \
+  --wt_fasta output/exp/my_protein_WT.fasta \
+  --protein_name my_protein \
+  --output_dir output/exp \
+  --generate_multi \
+  --multi_n 2 \
+  --multi_round_file data/exp/round1.xlsx \
+  --multi_threshold 1.0 \
+  --verbose
+```
+
+With conda:
+```bash
+conda activate evolvepro
+python evolvepro/wrapper/process_experimental.py \
+  --wt_sequence MNTINIAKNDFSQRWVTLP \
+  --protein_name my_protein \
+  --output_dir output/exp \
+  --verbose
 ```
 
 **Outputs**:
@@ -293,7 +342,7 @@ python scripts/dms/dms_main.py \
 - CSV file: `{dataset_name}_{model_name}_{experiment_name}.csv`
 - Contains per-round metrics for all parameter combinations:
   - Prediction errors (train/test MSE)
-  - R² scores
+  - Rï¿½ scores
   - Top variant identities
   - Spearman correlations
   - Binary classification accuracy
@@ -478,7 +527,7 @@ python evolvepro/plm/esm/extract.py \
   --nogpu \
   --concatenate_dir output/
 ```
-  **Warning**: CPU-only mode is significantly slower (10-100x) for large models
+ï¿½ **Warning**: CPU-only mode is significantly slower (10-100x) for large models
 
 ### Steps NOT Using GPU
 
@@ -644,10 +693,14 @@ python scripts/plot/dms.py
 ### Example 2: Experimental Protein Engineering
 
 ```bash
-# Step 1a: Generate variant library
-python scripts/process/exp_process.py
+# Step 1a: Generate variant library (using wrapper script)
+pixi run process-experimental \
+  --wt_sequence MNTINIAKNDFSQRWVTLP \
+  --protein_name my_protein \
+  --output_dir output/exp \
+  --verbose
 
-# Step 1b: Or use Python:
+# Step 1b: Or use Python API:
 python
 >>> from evolvepro.src.process import generate_wt, generate_single_aa_mutants
 >>> generate_wt('MNTINIAKNDFS...', 'output/exp/my_protein_WT.fasta')
