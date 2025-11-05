@@ -1653,7 +1653,7 @@ packages:
 - pypi: ./
   name: evolvepro
   version: 0.1.0
-  sha256: 87071a17f166a58cd9c9e4a1ddc30c29a05f6337b0a02d76fa66114445fe6392
+  sha256: 84fc1061c17e2c85aa96e111302de81a59ab8e1de4f2f288f4c89eca5182ce25
   requires_python: '>=3.11'
   editable: true
 - conda: https://conda.anaconda.org/conda-forge/noarch/exceptiongroup-1.3.0-pyhd8ed1ab_0.conda

@@ -84,13 +84,14 @@ The evolution process:
 - `evolvepro/src/plot.py`: Visualization utilities
 - `evolvepro/wrapper/process_experimental.py`: Command-line wrapper for experimental data processing (Step 1)
 - `evolvepro/wrapper/extract_embeddings.py`: Command-line wrapper for ESM embedding extraction (Step 2)
+- `evolvepro/wrapper/dms_evolution.py`: Command-line wrapper for DMS evolution simulations (Step 3)
 
 ## Common Development Commands
 
 ### Running DMS Workflow
 ```bash
-conda activate evolvepro
-python scripts/dms/dms_main.py \
+# Using the wrapper script (recommended)
+pixi run dms-evolution \
   --dataset_name brenan \
   --experiment_name test_run \
   --model_name esm2_t48_15B_UR50D \
@@ -99,7 +100,20 @@ python scripts/dms/dms_main.py \
   --num_simulations 10 \
   --num_iterations 5 \
   --learning_strategies topn \
-  --regression_types randomforest
+  --regression_types randomforest \
+  --output_dir output/dms_results \
+  --verbose
+
+# Or with conda
+conda activate evolvepro
+python evolvepro/wrapper/dms_evolution.py \
+  --dataset_name brenan \
+  --experiment_name test_run \
+  --model_name esm2_t48_15B_UR50D \
+  --embeddings_path output/plm/esm \
+  --labels_path data/dms \
+  --output_dir output/dms_results \
+  --verbose
 ```
 
 ### Running Experimental Workflow
@@ -298,7 +312,6 @@ Wrapper scripts in `evolvepro/wrapper/` provide user-friendly command-line inter
 - `--multi_round_file`: Excel file with experimental round data
 - `--multi_threshold`: Activity threshold for multi-mutants (default: 1.0)
 - `--verbose`: Show detailed progress information
-- `--gpu`: GPU flag (included for consistency, but Step 1 is CPU-only)
 
 **Output Files**:
 - `{protein_name}_WT.fasta`: Wild-type sequence (if generated from string)
@@ -403,6 +416,102 @@ pixi run -e plm-cpu python evolvepro/wrapper/extract_embeddings.py \
   --protein_name my_protein \
   --model esm2_t33_650M_UR50D \
   --model_cache_dir /shared/models \
+  --verbose
+```
+
+### dms_evolution.py
+
+**Purpose**: Step 3 of the DMS workflow - runs evolution simulations with grid search for benchmarking and few-shot optimization
+
+**Key Features**:
+- Run Deep Mutational Scanning (DMS) evolution simulations
+- Grid search across multiple parameter combinations
+- Support for multiple learning strategies, regression models, and first-round strategies
+- Comprehensive validation of input parameters
+- Verbose logging mode for detailed progress tracking
+- CPU-only (no GPU required for evolution step)
+
+**Common Options**:
+- `--dataset_name`: Name of the dataset (required)
+- `--experiment_name`: Name of the experiment for output files (required)
+- `--model_name`: PLM model name used for embeddings (required)
+- `--embeddings_path`: Directory containing embeddings CSV file (required)
+- `--labels_path`: Directory containing labels CSV file (required)
+- `--output_dir`: Output directory for results (required)
+- `--num_simulations`: Number of independent simulation runs (default: 10)
+- `--num_iterations`: Number of evolution rounds (e.g., "3 5 10") (default: 5)
+- `--num_mutants_per_round`: Variants per round (e.g., "8 16 32") (default: 16)
+- `--num_final_round_mutants`: Top variants to track in final round (default: 10)
+- `--learning_strategies`: Learning strategies (topn, random, topn2bottomn2, dist) (default: topn)
+- `--regression_types`: Regression models (randomforest, ridge, lasso, etc.) (default: randomforest)
+- `--first_round_strategies`: First round selection (random, diverse_medoids, representative_hie) (default: random)
+- `--embedding_types`: Embedding types (embeddings, embeddings_pca) (default: embeddings)
+- `--embeddings_file_type`: File format (csv or pt) (default: csv)
+- `--embeddings_type_pt`: For .pt files (average, mutated, both) (default: None)
+- `--pca_components`: PCA components (e.g., "50 100 200") (default: None)
+- `--measured_var`: Activity column(s) (activity, activity_scaled, activity_binary) (default: activity_scaled)
+- `--verbose`: Show detailed progress information
+
+**Output Files**:
+- `{dataset_name}_{model_name}_{experiment_name}.csv`: Results CSV with per-round metrics for all parameter combinations
+
+**Example Usage**:
+```bash
+# Basic DMS simulation with default parameters
+pixi run dms-evolution \
+  --dataset_name my_dataset \
+  --experiment_name test_run \
+  --model_name esm2_t48_15B_UR50D \
+  --embeddings_path output/plm/esm \
+  --labels_path data/dms \
+  --output_dir output/dms_results \
+  --verbose
+
+# Comprehensive grid search with multiple parameters
+pixi run dms-evolution \
+  --dataset_name brenan \
+  --experiment_name full_sweep \
+  --model_name esm2_t48_15B_UR50D \
+  --embeddings_path output/plm/esm \
+  --labels_path data/dms \
+  --num_simulations 10 \
+  --num_iterations 3 5 10 \
+  --num_mutants_per_round 8 16 32 \
+  --num_final_round_mutants 10 \
+  --learning_strategies topn random dist \
+  --regression_types randomforest ridge gradientboosting \
+  --first_round_strategies random diverse_medoids \
+  --embedding_types embeddings \
+  --measured_var activity_scaled \
+  --embeddings_file_type csv \
+  --pca_components 50 100 \
+  --output_dir output/dms_results \
+  --verbose
+
+# Quick test with minimal simulations
+pixi run dms-evolution \
+  --dataset_name test_data \
+  --experiment_name quick_test \
+  --model_name esm2_t33_650M_UR50D \
+  --embeddings_path output/plm/esm \
+  --labels_path data/dms \
+  --num_simulations 3 \
+  --num_iterations 3 \
+  --num_mutants_per_round 16 \
+  --learning_strategies topn \
+  --regression_types randomforest \
+  --output_dir output/dms_results \
+  --verbose
+
+# Using conda instead of pixi
+conda activate evolvepro
+python evolvepro/wrapper/dms_evolution.py \
+  --dataset_name my_dataset \
+  --experiment_name test_run \
+  --model_name esm2_t48_15B_UR50D \
+  --embeddings_path output/plm/esm \
+  --labels_path data/dms \
+  --output_dir output/dms_results \
   --verbose
 ```
 

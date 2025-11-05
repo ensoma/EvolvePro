@@ -276,7 +276,74 @@ python evolvepro/plm/ankh/extract.py \
 - Embeddings CSV file (from Step 2)
 - Labels CSV file (from Step 1)
 
-**Command-Line Interface**:
+**Command-Line Wrapper Script**:
+
+For convenience, a wrapper script `dms_evolution.py` is available with a user-friendly command-line interface. With pixi, use the `dms-evolution` command:
+
+```bash
+# Basic usage: Run DMS simulation with default parameters
+pixi run dms-evolution \
+  --dataset_name my_dataset \
+  --experiment_name test_run \
+  --model_name esm2_t48_15B_UR50D \
+  --embeddings_path output/plm/esm \
+  --labels_path data/dms \
+  --output_dir output/dms_results \
+  --verbose
+
+# Comprehensive grid search with multiple parameters
+pixi run dms-evolution \
+  --dataset_name brenan \
+  --experiment_name full_sweep \
+  --model_name esm2_t48_15B_UR50D \
+  --embeddings_path output/plm/esm \
+  --labels_path data/dms \
+  --num_simulations 10 \
+  --num_iterations 3 5 10 \
+  --num_mutants_per_round 8 16 32 \
+  --num_final_round_mutants 10 \
+  --learning_strategies topn random dist \
+  --regression_types randomforest ridge gradientboosting \
+  --first_round_strategies random diverse_medoids \
+  --embedding_types embeddings \
+  --measured_var activity_scaled \
+  --embeddings_file_type csv \
+  --pca_components 50 100 \
+  --output_dir output/dms_results \
+  --verbose
+
+# Quick test with minimal simulations
+pixi run dms-evolution \
+  --dataset_name test_data \
+  --experiment_name quick_test \
+  --model_name esm2_t33_650M_UR50D \
+  --embeddings_path output/plm/esm \
+  --labels_path data/dms \
+  --num_simulations 3 \
+  --num_iterations 3 \
+  --num_mutants_per_round 16 \
+  --learning_strategies topn \
+  --regression_types randomforest \
+  --output_dir output/dms_results \
+  --verbose
+```
+
+With conda:
+```bash
+conda activate evolvepro
+python evolvepro/wrapper/dms_evolution.py \
+  --dataset_name my_dataset \
+  --experiment_name test_run \
+  --model_name esm2_t48_15B_UR50D \
+  --embeddings_path output/plm/esm \
+  --labels_path data/dms \
+  --output_dir output/dms_results \
+  --verbose
+```
+
+**Python API (Advanced)**:
+
+For more control, you can use the grid_search function directly:
 ```bash
 python scripts/dms/dms_main.py \
   --dataset_name my_dataset \
@@ -666,9 +733,8 @@ python evolvepro/plm/esm/extract.py \
   --include mean \
   --concatenate_dir output/plm/esm/
 
-# Step 3: Run evolution simulation (in evolvepro environment)
-conda activate evolvepro
-python scripts/dms/dms_main.py \
+# Step 3: Run evolution simulation (using wrapper script)
+pixi run dms-evolution \
   --dataset_name brenan \
   --experiment_name standard \
   --model_name esm2_t48_15B_UR50D \
@@ -684,7 +750,8 @@ python scripts/dms/dms_main.py \
   --embedding_types embeddings \
   --measured_var activity_scaled \
   --embeddings_file_type csv \
-  --output_dir output/dms_results
+  --output_dir output/dms_results \
+  --verbose
 
 # Step 4: Visualize results
 python scripts/plot/dms.py

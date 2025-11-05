@@ -163,14 +163,6 @@ Examples:
         help="Minimum activity threshold to include a variant in multi-mutant combinations (default: 1.0)",
     )
 
-    # Hardware options (included for consistency, though Step 1 doesn't use GPU)
-    hardware_group = parser.add_argument_group("hardware options")
-    hardware_group.add_argument(
-        "--gpu",
-        action="store_true",
-        help="Enable GPU acceleration (note: Step 1 processing is CPU-only, included for consistency)",
-    )
-
     # Output control
     output_group = parser.add_argument_group("output options")
     output_group.add_argument(
@@ -203,8 +195,6 @@ def main() -> None:
     logger.info("=" * 60)
     logger.info(f"Protein name: {args.protein_name}")
     logger.info(f"Output directory: {args.output_dir}")
-    if args.gpu:
-        logger.info("Note: GPU flag set, but Step 1 processing is CPU-only")
     logger.info("")
 
     # Define output file paths
